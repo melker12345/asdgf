@@ -16,7 +16,6 @@ server_socket.listen(5)
 
 print(f"Server is listening on {HOST}:{PORT}")
 
-#line 19
 def send_msg(sock, msg):
     msg_encoded = msg.encode()
     msg_length = len(msg_encoded)
@@ -77,7 +76,7 @@ def listen_for_exit_command():
             print("\nShutting down the server...")
             break
 
-# Start the input listener thread (add around Line 80)
+# Start the input listener thread line 80
 input_thread = threading.Thread(target=listen_for_exit_command)
 input_thread.daemon = True  # So that this thread will exit when the main program exits
 input_thread.start()
@@ -88,11 +87,45 @@ try:
     while not shutdown_flag:
         # Check if there's a client trying to connect
         readable, _, _ = select.select([server_socket], [], [], 1)  # Line 89
-
+        # Line 91
         if server_socket in readable:
-            client_socket, _ = server_socket.accept()               # Line 91
+            client_socket, _ = server_socket.accept() # Line 93
             client_thread = threading.Thread(
-                target=handle_client, args=(client_socket,))       # Line 93
+                target=handle_client, args=(client_socket,))       
             client_thread.start()
 finally:
     server_socket.close() 
+
+
+'''
+Buggs:
+1:
+- When client enters nothing 3 times the pipe brakes 
+
+2:
+- If client enters a a command that require confirmation client hangs
+
+
+
+Features to be added 
+
+1:
+- Authentication
+    - Tokan based 
+    - Encrypt Tokan ssl 
+
+2: 
+- Cross network support
+    - Port forwarding
+    - HOST = global IP
+ 
+3:
+- Improve preformance 
+
+?
+- Is async somthing to consider?
+- 
+
+
+
+'''
